@@ -88,7 +88,7 @@ public static class MessageSerializer
         {
             SearchMode.Basic => FindBasicConverterInternal(type),
             SearchMode.Generic => FindGenericConverterInternal(type),
-            SearchMode.Combined => FindGenericConverterInternal(type) ?? FindBasicConverterInternal(type),
+            SearchMode.Combined => FindBasicConverterInternal(type) ?? FindGenericConverterInternal(type),
             _ => null,
         };
 
