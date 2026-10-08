@@ -276,10 +276,10 @@ public static class MessageSerializer
                 writer.Write(i);
                 break;
             case ulong i:
-                writer.Write(i);
+                writer.WritePacked(i);
                 break;
             case long i:
-                ExtraMessageExtensions.Write(writer, i); // For some reason this insists on referring the to float write method, so this is me taking precautions
+                writer.WritePacked(i);
                 break;
             case Vector2 i:
                 writer.Write(i);
@@ -332,8 +332,8 @@ public static class MessageSerializer
         [typeof(bool)] = reader => reader.ReadBoolean(),
         [typeof(Vector2)] = reader => reader.ReadVector2(),
         [typeof(string)] = reader => reader.ReadString(),
-        [typeof(ulong)] = reader => reader.ReadUInt64(),
-        [typeof(long)] = reader => reader.ReadInt64(),
+        [typeof(ulong)] = reader => reader.ReadPackedUInt64(),
+        [typeof(long)] = reader => reader.ReadPackedInt64(),
         [typeof(Color)] = reader => reader.ReadColor(),
         [typeof(Color32)] = reader => reader.ReadColor32(),
     };

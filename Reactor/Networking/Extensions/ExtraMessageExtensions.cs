@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.IO;
 using Hazel;
 using Hazel.Udp;
 using Reactor.Networking.Serialization;
@@ -19,6 +20,34 @@ public static class ExtraMessageExtensions
     private static float ReverseLerp(float t)
     {
         return Mathf.Clamp01((t - MIN) / DIFF);
+    }
+
+    /// <summary>
+    /// Writes a packed long value to the <paramref name="writer"/>.
+    /// </summary>
+    /// <param name="writer">The <see cref="MessageWriter"/> to write to.</param>
+    /// <param name="value">The <see cref="long"/> to write.</param>
+    public static void WritePacked(this MessageWriter writer, long value)
+    {
+        // From what I can tell from the publicly available source of Hazel, they just cast the int value to a uint??
+        // Seems like they never heard of ZigZag encoding
+        writer.WritePacked((ulong) ((value << 1) ^ (value >> 63)));
+    }
+
+    /// <summary>
+    /// Writes a packed ulong value to the <paramref name="writer"/>.
+    /// </summary>
+    /// <param name="writer">The <see cref="MessageWriter"/> to write to.</param>
+    /// <param name="value">The <see cref="ulong"/> to write.</param>
+    public static void WritePacked(this MessageWriter writer, ulong value)
+    {
+        while (value >= 0x80)
+        {
+            writer.Write((byte) (value | 0x80));
+            value >>= 7;
+        }
+
+        writer.Write((byte) value);
     }
 
     /// <summary>
@@ -83,6 +112,45 @@ public static class ExtraMessageExtensions
         writer.Write(value.g);
         writer.Write(value.b);
         writer.Write(value.a);
+    }
+
+    /// <summary>
+    /// Reads a packed <see cref="long"/> from the <paramref name="reader"/>.
+    /// </summary>
+    /// <param name="reader">The <see cref="MessageReader"/> to read from.</param>
+    /// <returns>A <see cref="long"/> from the <paramref name="reader"/>.</returns>
+    public static long ReadPackedInt64(this MessageReader reader)
+    {
+        // See comment in WritePacked(long)
+        var val = reader.ReadPackedUInt64();
+        return (long) (val >> 1) ^ -(long) (val & 1);
+    }
+
+    /// <summary>
+    /// Reads a packed <see cref="ulong"/> from the <paramref name="reader"/>.
+    /// </summary>
+    /// <param name="reader">The <see cref="MessageReader"/> to read from.</param>
+    /// <returns>A <see cref="ulong"/> from the <paramref name="reader"/>.</returns>
+    public static ulong ReadPackedUInt64(this MessageReader reader)
+    {
+        var result = 0ul;
+        var shift = 0;
+
+        while (true)
+        {
+            var b = reader.ReadByte();
+            result |= (ulong) (b & 0x7F) << shift;
+
+            if ((b & 0x80) == 0)
+                break;
+
+            shift += 7;
+
+            if (shift >= 70)
+                throw new InvalidDataException("VarInt too long");
+        }
+
+        return result;
     }
 
     /// <summary>
