@@ -47,7 +47,17 @@ public static class ExtraMessageExtensions
     /// </summary>
     /// <param name="writer">The <see cref="MessageWriter"/> to write to.</param>
     /// <param name="value">The <see cref="long"/> to write.</param>
-    public static void Write(this MessageWriter writer, long value) => writer.Write(BitConverter.GetBytes(value));
+    public static void Write(this MessageWriter writer, long value)
+    {
+        writer.Write((byte) value);
+        writer.Write((byte) (value >> 8));
+        writer.Write((byte) (value >> 16));
+        writer.Write((byte) (value >> 24));
+        writer.Write((byte) (value >> 32));
+        writer.Write((byte) (value >> 40));
+        writer.Write((byte) (value >> 48));
+        writer.Write((byte) (value >> 56));
+    }
 
     /// <summary>
     /// Writes a color value to the <paramref name="writer"/>.
@@ -55,6 +65,19 @@ public static class ExtraMessageExtensions
     /// <param name="writer">The <see cref="MessageWriter"/> to write to.</param>
     /// <param name="value">The <see cref="Color32"/> to write.</param>
     public static void Write(this MessageWriter writer, Color32 value)
+    {
+        writer.Write(value.r);
+        writer.Write(value.g);
+        writer.Write(value.b);
+        writer.Write(value.a);
+    }
+
+    /// <summary>
+    /// Writes a color value to the <paramref name="writer"/>.
+    /// </summary>
+    /// <param name="writer">The <see cref="MessageWriter"/> to write to.</param>
+    /// <param name="value">The <see cref="Color"/> to write.</param>
+    public static void Write(this MessageWriter writer, Color value)
     {
         writer.Write(value.r);
         writer.Write(value.g);
@@ -96,7 +119,18 @@ public static class ExtraMessageExtensions
     /// </summary>
     /// <param name="reader">The <see cref="MessageReader"/> to read from.</param>
     /// <returns>The resulting long value from the <paramref name="reader"/>.</returns>
-    public static long ReadInt64(this MessageReader reader) => BitConverter.ToInt64(reader.ReadBytes(8), 0);
+    public static long ReadInt64(this MessageReader reader)
+    {
+        var uval = (long) reader.ReadByte();
+        uval |= (long) reader.ReadByte() << 8;
+        uval |= (long) reader.ReadByte() << 16;
+        uval |= (long) reader.ReadByte() << 24;
+        uval |= (long) reader.ReadByte() << 32;
+        uval |= (long) reader.ReadByte() << 40;
+        uval |= (long) reader.ReadByte() << 48;
+        uval |= (long) reader.ReadByte() << 56;
+        return uval;
+    }
 
     /// <summary>
     /// Reads a color value from a network message.
